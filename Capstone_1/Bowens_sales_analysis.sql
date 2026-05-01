@@ -23,7 +23,8 @@ FROM management
  FROM store_locations
  WHERE State LIKE '%Maryland%'
  -- 731-739 Maryland store ids
- 
+ -- ---------------------------------------------------------------------------------
+
 -- What is the month by month revenue breakdown for the sales territory?
 
 SELECT Year(Date) as Year_Sale, Month(Date) as Month_Sale, concat('$', format(SUM(SalesTotal),2)) AS Total_Sales
@@ -53,7 +54,7 @@ WHERE Store_ID BETWEEN '731' AND '739'
 GROUP BY YEAR(Transaction_Date), MONTH(Transaction_Date))
 ORDER BY Year_Sale ASC, Month_Sale ASC, Sales_Type
 -- Sales per month from Maryland Online & Store sales separate; 2022-01 - 2025-12
--- ------------------------------------------------------------------------------------ 
+-- ----------------------------------------------------------------
 
 SELECT Year_Sale, Month_Sale, CONCAT('$', FORMAT(SUM(Total_Sales), 2)) AS Combined_Monthly_Sales
 FROM ( 
@@ -78,7 +79,7 @@ UNION ALL
 GROUP BY Year_Sale, Month_Sale
 ORDER BY Year_Sale ASC, Month_Sale ASC
 -- Total Sales each month of Maryland; 2022-01 - 2025-12
-------------------------------------------------
+-- -------------------------------------------------------------------------------------------------------
 -- Provide a comparison of total revenue for the specific sales territory and the region it belongs to  
 SELECT State, Region
 FROM management
@@ -105,7 +106,7 @@ or ShiptoState = 'Maine'
 or ShiptoState = 'New Jersey'
 -- $8,609,433.67 NE Region Online Sales
 
-select  State as NE_Region, Sum(Sale_Amount) as Sale_per_state
+select  State as NE_Region, CONCAT('$', FORMAT(Sum(Sale_Amount), 2)) as Sale_per_state
 from store_locations
 join store_sales on StoreId = Store_ID
 where State = 'Maryland'
@@ -113,9 +114,9 @@ or State = 'Massachusetts'
 or State = 'Maine'
 or State = 'New Jersey'
 group by 1
--- store sales per state in region
+-- store sales per state in region; 1-Maryland 2-Massachusetts 3-New Jersey 4-Maine 
 
-(select Sum(Sale_Amount) as Region_Sales
+(select concat('$', format(Sum(Sale_Amount), 2 )) as Region_Sales
 from store_locations
 join store_sales on StoreId = Store_ID
 where State = 'Maryland'
@@ -124,11 +125,49 @@ or State = 'Maine'
 or State = 'New Jersey')
 -- $24,237,526.98 in NE Region Store Sales
 
+-- $12,872,115.72 Maryland Sales
 -- $32,846,960.65 total region sales
 -- -----------------------------------------------------------------
 
-
-  
-  
+-- What is the number of transactions per month and average transaction size by product category for the sales territory?
+SELECT 
+    DATE_FORMAT(Transaction_Date, '%Y-%m') AS Y_Month,
+    CASE 
+        WHEN Prod_Num LIKE '%-M' THEN 'Apparel & Merchandise'
+        WHEN Prod_Num LIKE '%-T' THEN 'Textbooks'
+        WHEN Prod_Num LIKE '%-A' THEN 'Art Supplies'
+        WHEN Prod_Num LIKE '%-B' THEN 'Books(General)'
+        WHEN Prod_Num LIKE '%-S' THEN 'Stationery & Supplies'
+        WHEN Prod_Num LIKE '%-IT' THEN 'Technology & Accesories'
+        ELSE 'Other'
+    END AS Product_Category,
+    COUNT(*) AS Num_Transactions,
+    CONCAT('$', FORMAT(AVG(Sale_Amount), 2)) AS Avg_Transaction_Size
+FROM Store_Sales
+WHERE Store_ID BETWEEN 731 AND 739 
+GROUP BY 
+    Y_Month,
+    Product_Category
+ORDER BY 
+    Y_Month ASC,
+    Num_Transactions ASC
+-- -------------------------------------------------------
+-- Can you provide a ranking of in-store sales performance by each store in the sales territory, or a
+-- ranking of online sales performance by state within an online sales territory?
+SELECT Store_ID, concat('$', Format (sum(Sale_Amount), 2)) as M_Store_Sales
+FROM store_sales
+WHERE Store_ID BETWEEN '731' AND '739'
+GROUP BY 1
+ORDER BY M_Store_Sales DESC
  
-  
+ -- Maryland Store Sales; 736,734,737,735,739,733,732,738,731
+ 
+ SELECT ShiptoState as NE_Region, concat('$', format (sum(SalesTotal), 2)) as NE_Online_Sales
+FROM online_sales
+WHERE ShiptoState = 'Maryland'
+OR ShiptoState = 'Massachusetts' 
+OR ShiptoState = 'Maine'
+OR ShiptoState = 'New Jersey'
+GROUP BY 1
+-- Online Sales per state in region
+-- 1-Massachusetts 2-New Jersey 3-Maryland 4-Maine
