@@ -23,6 +23,16 @@ FROM management
  FROM store_locations
  WHERE State LIKE '%Maryland%'
  -- 731-739 Maryland store ids
+ 
+ -- All of Online and Store sales
+ (SELECT CONCAT('$', FORMAT(SUM(Sale_Amount), 2)) AS ALL_SALES,
+'Store' as Sale_Type
+ FROM store_sales)
+ UNION ALL
+(SELECT CONCAT('$', FORMAT (SUM(SalesTotal), 2)) AS ALL_SALES,
+ 'Online' as Sale_Type
+ FROM online_sales)
+  
  -- ---------------------------------------------------------------------------------
 
 -- What is the month by month revenue breakdown for the sales territory?
@@ -86,7 +96,7 @@ FROM management
 WHERE Region = 'Northeast'
 -- Maryland, Massachusetts, Maine, New Jersey
 
-SELECT concat('$', FORMAT(SUM(total_sales), 2)) as combined_sales
+SELECT concat('$', FORMAT(SUM(total_sales), 2)) as combined_sales, 'Maryland' as Sale_State
 FROM(
 SELECT SUM(SalesTotal) as total_sales
  FROM online_sales
@@ -98,12 +108,13 @@ WHERE Store_ID BETWEEN '731' AND '739')
 as combined_sales
 -- $12,872,115.72 Maryland Sales
 
-select concat('$', format (sum(SalesTotal), 2)) as NE_Online_Sales
+select ShiptoState as State,  concat('$', format (sum(SalesTotal), 2)) as NE_Online_Sales 
 from online_sales
 where ShiptoState = 'Maryland'
 or ShiptoState = 'Massachusetts' 
 or ShiptoState = 'Maine'
 or ShiptoState = 'New Jersey'
+group by 1
 -- $8,609,433.67 NE Region Online Sales
 
 select  State as NE_Region, CONCAT('$', FORMAT(Sum(Sale_Amount), 2)) as Sale_per_state
@@ -116,7 +127,7 @@ or State = 'New Jersey'
 group by 1
 -- store sales per state in region; 1-Maryland 2-Massachusetts 3-New Jersey 4-Maine 
 
-(select concat('$', format(Sum(Sale_Amount), 2 )) as Region_Sales
+(select concat('$', format(Sum(Sale_Amount), 2 )) as Region_Sales, 'NE_Region' as NE_Region
 from store_locations
 join store_sales on StoreId = Store_ID
 where State = 'Maryland'
